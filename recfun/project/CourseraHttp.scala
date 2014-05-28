@@ -47,6 +47,7 @@ object DeprectaionForwarder {
     val httpsScheme = new Scheme("https", sf, 443);
     val schemeRegistry = new SchemeRegistry();
     schemeRegistry.register(httpsScheme);
+	schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80))
 
     val dispatch_client = new dispatch.ConfiguredHttpClient(credentials)
     val params = dispatch_client.createHttpParams
