@@ -8,7 +8,7 @@ import TweetReader._
  */
 class Tweet(val user: String, val text: String, val retweets: Int) {
   override def toString: String =
-    "User: " + user + "\n" +
+    "User: " + user + " " +
     "Text: " + text + " [" + retweets + "]"
 }
 
@@ -55,7 +55,7 @@ abstract class TweetSet {
    * Question: Should we implement this method here, or should it remain abstract
    * and be implemented in the subclasses?
    */
-   def union(that: TweetSet): TweetSet = ???
+   def union(that: TweetSet): TweetSet = filterAcc(p => true, that)
 
   /**
    * Returns the tweet from this set which has the greatest retweet count.
@@ -112,7 +112,7 @@ class Empty extends TweetSet {
 
   def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet = this
   
- // def union(that: TweetSet): TweetSet = that
+  //override def union(that: TweetSet): TweetSet = that
 
   /**
    * The following methods are already implemented
@@ -131,16 +131,14 @@ class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet {
 
   def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet = {
     if(p(this.elem)) {
-    	this.left.filterAcc(p,this.right.filterAcc(p, acc)) incl this.elem
-//      val acc2 = acc incl this.elem
-//      val acc3 = this.left.filterAcc(p,acc2)
-//      val acc4 = this.right.filterAcc(p,acc2)
-//      acc4
-    } else acc
+      this.right.filterAcc(p, this.left.filterAcc(p,acc)) incl this.elem
+    } else {
+      this.right.filterAcc(p, this.left.filterAcc(p,acc))
+    }
   }
   
   // ((left union right) union that) incl elem
-  // def union(that: TweetSet): TweetSet = filterAcc(p => true,that)
+  //override def union(that: TweetSet): TweetSet = ((left union right) union that) incl elem // filterAcc(p => true,that)
 
   /**
    * The following methods are already implemented
