@@ -63,10 +63,15 @@ abstract class TweetSet {
    * Calling `mostRetweeted` on an empty set should throw an exception of
    * type `java.util.NoSuchElementException`.
    *
-   * Question: Should we implment this method here, or should it remain abstract
+   * Question: Should we implement this method here, or should it remain abstract
    * and be implemented in the subclasses?
    */
-  def mostRetweeted: Tweet = ???
+  def mostRetweeted: Tweet
+  
+  /**
+   * This is a helper method for `mostRetweeted` that propagates the max retweets.
+   */
+  def mostRetweetedMax(max: Tweet): Tweet
 
   /**
    * Returns a list containing all tweets of this set, sorted by retweet count
@@ -74,11 +79,10 @@ abstract class TweetSet {
    * have the highest retweet count.
    *
    * Hint: the method `remove` on TweetSet will be very useful.
-   * Question: Should we implment this method here, or should it remain abstract
+   * Question: Should we implement this method here, or should it remain abstract
    * and be implemented in the subclasses?
    */
-  def descendingByRetweet: TweetList = ???
-
+  def descendingByRetweet: TweetList
 
   /**
    * The following methods are already implemented
@@ -110,14 +114,17 @@ abstract class TweetSet {
 
 class Empty extends TweetSet {
 
-  def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet = this
+  def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet = acc
   
-  //override def union(that: TweetSet): TweetSet = that
-
+  def mostRetweeted: Tweet = throw new NoSuchElementException("Empty set")
+  
+  def mostRetweetedMax(max: Tweet): Tweet = max
+  
+  def descendingByRetweet: TweetList = Nil
+  
   /**
    * The following methods are already implemented
    */
-
   def contains(tweet: Tweet): Boolean = false
 
   def incl(tweet: Tweet): TweetSet = new NonEmpty(tweet, new Empty, new Empty)
@@ -131,19 +138,31 @@ class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet {
 
   def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet = {
     if(p(this.elem)) {
-      this.right.filterAcc(p, this.left.filterAcc(p,acc)) incl this.elem
+      // this is analogous as to do a post-order traverse like this:
+      // val L = this.left.filterAcc(p,acc)
+      // val R_L = this.right.filterAcc(p,L)
+      // R_L incl this.elem
+        this.right.filterAcc(p,this.left.filterAcc(p,acc)) incl this.elem
     } else {
       this.right.filterAcc(p, this.left.filterAcc(p,acc))
     }
   }
   
-  // ((left union right) union that) incl elem
-  //override def union(that: TweetSet): TweetSet = ((left union right) union that) incl elem // filterAcc(p => true,that)
+  def mostRetweeted: Tweet = mostRetweetedMax(this.elem)
+
+  def mostRetweetedMax(max: Tweet): Tweet = {
+    def maxRetweets(a: Tweet, b: Tweet): Tweet = if(a.retweets > b.retweets) a else b
+    this.right.mostRetweetedMax(this.left.mostRetweetedMax(maxRetweets(this.elem, max)))
+  }
+  
+  def descendingByRetweet: TweetList = {
+    val mrt: Tweet = this.mostRetweeted
+    new Cons(mrt, (this.remove(mrt)).descendingByRetweet)
+  }
 
   /**
    * The following methods are already implemented
    */
-
   def contains(x: Tweet): Boolean =
     if (x.text < elem.text) left.contains(x)
     else if (elem.text < x.text) right.contains(x)
@@ -193,14 +212,14 @@ object GoogleVsApple {
   val google = List("android", "Android", "galaxy", "Galaxy", "nexus", "Nexus")
   val apple = List("ios", "iOS", "iphone", "iPhone", "ipad", "iPad")
 
-  lazy val googleTweets: TweetSet = ???
-  lazy val appleTweets: TweetSet = ???
+  lazy val googleTweets: TweetSet = TweetReader.allTweets.filter((t: Tweet) => google.exists((w: String) => t.text.contains(w)))
+  lazy val appleTweets: TweetSet = TweetReader.allTweets.filter((t: Tweet) => apple.exists((w: String) => t.text.contains(w)))
 
   /**
    * A list of all tweets mentioning a keyword from either apple or google,
    * sorted by the number of retweets.
    */
-  lazy val trending: TweetList = ???
+  lazy val trending: TweetList = (googleTweets union appleTweets) descendingByRetweet
 }
 
 object Main extends App {
