@@ -1,9 +1,8 @@
 package greeter
 
 object HelloWorkSheet {
-	println("Welcome to the Scala worksheet") //> Welcome to the Scala worksheet
-  val x = 5                                       //> x  : Int = 5
-  def increase(i: Int) = i + 1                    //> increase: (i: Int)Int
-  increase(x)                                     //> res0: Int = 6
-
+  val m = "abcd".toLowerCase.groupBy(c => c).mapValues(v => v.length).toList.sorted
+  val l = List("hhlm","hnuigni", "shduisg")
+ 
+  l.fold("")(s => s + s)
 }
