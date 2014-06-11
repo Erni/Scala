@@ -86,16 +86,15 @@ object Anagrams {
    *  in the example above could have been displayed in some other order.
    */
   def combinations(occurrences: Occurrences): List[Occurrences] = {
-    if (occurrences.isEmpty) List(List())
-    else {
-      for {
-        occ <- occurrences
-        if occ._2 > 0
-        val aaa: List[Occurrences] = combinations(List((occ)))
-        val bbb: List[Occurrences] = combinations(occurrences.tail)
-        val rest: Occurrences = aaa :: bbb
-        val result: List[Occurrences] = List(List(occ)) ::: rest
-      } yield List(occ) :: rest
+    occurrences match {
+      case Nil => List(List())
+      case head :: tail =>
+        val Y = combinations(tail)
+        val Z = (for {
+          occ <- Y
+          i <- 1 to head._2
+        } yield (head._1, i) :: occ)
+        Y ::: Z
     }
   }
 
@@ -110,7 +109,13 @@ object Anagrams {
    *  Note: the resulting value is an occurrence - meaning it is sorted
    *  and has no zero-entries.
    */
-  def subtract(x: Occurrences, y: Occurrences): Occurrences = ???
+  def subtract(x: Occurrences, y: Occurrences): Occurrences = {
+    (y.toMap.foldLeft(x.toMap)((map, tuple) => {
+      val newFreq = map(tuple._1) - tuple._2
+      if (newFreq <= 0) map - tuple._1
+      else map.updated(tuple._1, newFreq)
+    })).toList.sorted
+  }
 
   /**
    * Returns a list of all anagram sentences of the given sentence.
@@ -153,6 +158,24 @@ object Anagrams {
    *
    *  Note: There is only one anagram of an empty sentence.
    */
-  def sentenceAnagrams(sentence: Sentence): List[Sentence] = ???
+  def sentenceAnagrams(sentence: Sentence): List[Sentence] = {
+    def iter(occurrences: Occurrences): List[Sentence] = {
+      if (occurrences.isEmpty) List(List())
+      else 
+        for {
+          comb <- combinations(occurrences)
+          // For each word that exists in the dictionary take 
+          word <- dictionaryByOccurrences.getOrElse(comb, List())
+          // all the sentences that come from subtracting from the occurrences
+          // the occurrence list of the word
+          sentence <- iter(subtract(occurrences, wordOccurrences(word)))
+          if !comb.isEmpty
+          // and yield the concatenation of the word with the sentence
+          // preserving the invariant of the occurrence list
+        } yield word :: sentence
+    }
+
+    iter(sentenceOccurrences(sentence))
+  }
 
 }
